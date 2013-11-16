@@ -401,3 +401,32 @@ def is_classifier(estimator):
     """Returns True if the given estimator is (probably) a classifier."""
     estimator = _get_sub_estimator(estimator)
     return isinstance(estimator, ClassifierMixin)
+
+
+###############################################################################
+class InstanceReductionMixin(object):
+    """Mixin class for all instance reduction techniques in scikit-learn"""
+
+    def reduce(self, X, y):
+        """Returns the mean accuracy on the given test data and labels.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Training set.
+
+        y : array-like, shape = [n_samples]
+            Labels for X.
+
+        Returns
+        -------
+        P : array-like, shape = [indeterminated, n_features]
+            Resulting training set.
+        
+        q : array-like, shape = [indertaminated]
+            Labels for P
+        """
+
+        return self.run(X, y)
+
+
