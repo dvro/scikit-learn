@@ -17,17 +17,17 @@ from ..utils.validation import check_arrays, atleast2d_or_csr
 from ..neighbors.classification import KNeighborsClassifier
 
 
-class CondensedNearestNeighbors(ClassifierMixin, InstanceReductionMixin):
+class CondensedNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductionMixin):
     """Condensed Nearest Neighbors.
 
     Each class is represented by a set of prototypes, with test samples
     classified to the class with the nearest prototype.
-    The Condensed Nearest Neighbors create removes the redundant instances,
+    The Condensed Nearest Neighbors removes the redundant instances,
     maintaining the samples in the decision boundaries.
 
     Parameters
     ----------
-    n_neighbors : int, optional (default = 5)
+    n_neighbors : int, optional (default = 1)
         Number of neighbors to use by default for :meth:`k_neighbors` queries.
 
     Attributes
@@ -42,7 +42,7 @@ class CondensedNearestNeighbors(ClassifierMixin, InstanceReductionMixin):
 
     Examples
     --------
-    >>> from sklearn.instance_reduction.condensed import CondensedNearestNeighbors
+    >>> from sklearn.instance_reduction.cnn import CondensedNearestNeighbors
     >>> import numpy as np
     >>> X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
     >>> y = np.array([1, 1, 1, 2, 2, 2])
@@ -70,11 +70,17 @@ class CondensedNearestNeighbors(ClassifierMixin, InstanceReductionMixin):
 
     def __init__(self, n_neighbors=1):
         self.n_neighbors = n_neighbors
-        self.prototypes_ = None
-        self.labels_ = None
-        self.reduction_ = None
 
     def reduce(self, X, y):
+
+        
+#        knn = KNeighborsClassifier(n_neighbors = self.n_neighbors)
+#        knn.fit(X, y)
+
+        X, y = check_arrays(X, y, sparse_format="csr")
+#        if sp.issparse(X):
+#            raise ValueError("threshold shrinking not supported"
+#                             " for sparse input")
         prots_s = []
         labels_s = []
 
@@ -96,8 +102,8 @@ class CondensedNearestNeighbors(ClassifierMixin, InstanceReductionMixin):
                 labels_s = labels_s + [label]
                 knn.fit(prots_s, labels_s)
        
-        self.prototypes_ = prots_s
-        self.labels_ = labels_s
+        self.prototypes_ = np.asarray(prots_s)
+        self.labels_ = np.asarray(labels_s)
         self.reduction_ = 1.0 - float(len(self.labels_))/len(y)
         return self.prototypes_, self.labels_
  
@@ -114,10 +120,6 @@ class CondensedNearestNeighbors(ClassifierMixin, InstanceReductionMixin):
         y : array, shape = [n_samples]
             Target values (integers)
         """
-        X, y = check_arrays(X, y, sparse_format="csr")
-        #if sp.issparse(X) and self.shrink_threshold:
-        #    raise ValueError("threshold shrinking not supported"
-        #                     " for sparse input")
 
         self.reduce(X, y)
         return self
@@ -130,6 +132,8 @@ class CondensedNearestNeighbors(ClassifierMixin, InstanceReductionMixin):
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+        n_neighbors : int, optional (default = 1)
+        Number of neighbors to use by default for :meth:`k_neighbors` queries.
 
         Returns
         -------
@@ -149,4 +153,3 @@ class CondensedNearestNeighbors(ClassifierMixin, InstanceReductionMixin):
         knn = KNeighborsClassifier(n_neighbors = n_neighbors)
         knn.fit(self.prototypes_, self.labels_)
         return knn.predict(X)
-

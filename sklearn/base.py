@@ -427,6 +427,6 @@ class InstanceReductionMixin(object):
             Labels for P
         """
 
-        return self.run(X, y)
+        return P, q
 
 
