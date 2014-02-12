@@ -74,13 +74,8 @@ class CondensedNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductio
 
     def reduce(self, X, y):
         
-#        knn = KNeighborsClassifier(n_neighbors = self.n_neighbors)
-#        knn.fit(X, y)
-
         X, y = check_arrays(X, y, sparse_format="csr")
-#        if sp.issparse(X):
-#            raise ValueError("threshold shrinking not supported"
-#                             " for sparse input")
+
         prots_s = []
         labels_s = []
 
@@ -107,49 +102,3 @@ class CondensedNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductio
         self.reduction_ = 1.0 - float(len(self.labels_))/len(y)
         return self.prototypes_, self.labels_
  
-    def fit(self, X, y):
-        """
-        Fit the NearestPrototype model according to the given training data.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape = [n_samples, n_features]
-            Training vector, where n_samples in the number of samples and
-            n_features is the number of features.
-            Note that centroid shrinking cannot be used with sparse matrices.
-        y : array, shape = [n_samples]
-            Target values (integers)
-        """
-
-        self.reduce(X, y)
-        return self
-
-    def predict(self, X, n_neighbors = 1):
-        """Perform classification on an array of test vectors X.
-
-        The predicted class C for each sample in X is returned.
-
-        Parameters
-        ----------
-        X : array-like, shape = [n_samples, n_features]
-        n_neighbors : int, optional (default = 1)
-        Number of neighbors to use by default for :meth:`k_neighbors` queries.
-
-        Returns
-        -------
-        C : array, shape = [n_samples]
-
-        Notes
-        -----
-        If the metric constructor parameter is "precomputed", X is assumed to
-        be the distance matrix between the data to be predicted and
-        ``self.centroids_``.
-        """
-        X = atleast2d_or_csr(X)
-        if not hasattr(self, "prototypes_") or self.prototypes_ == None:
-            raise AttributeError("Model has not been trained yet.")
-        #return self.labels_[pairwise_distances(
-        #    X, self.prototypes_, metric=self.metric).argmin(axis=1)]
-        knn = KNeighborsClassifier(n_neighbors = n_neighbors)
-        knn.fit(self.prototypes_, self.labels_)
-        return knn.predict(X)

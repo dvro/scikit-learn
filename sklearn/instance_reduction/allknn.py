@@ -16,6 +16,7 @@ from ..metrics.pairwise import pairwise_distances
 from ..utils.validation import check_arrays, atleast2d_or_csr
 from ..neighbors.classification import KNeighborsClassifier
 from .enn import EditedNearestNeighbors
+from .base import InstanceReductionMixin
 
 
 class AllKNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductionMixin):
@@ -30,7 +31,7 @@ class AllKNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductionMixi
 
     Parameters
     ----------
-    n_neighbors : int, optional (default = 5)
+    n_neighbors : int, optional (default = 3)
         Number of limit neighbors to use by default for :meth:`k_neighbors` queries.
 
     Attributes
@@ -68,7 +69,7 @@ class AllKNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductionMixi
 
     """
 
-    def __init__(self, n_neighbors=5):
+    def __init__(self, n_neighbors=3):
         self.n_neighbors = n_neighbors
 
     def reduce(self, X, y):
@@ -93,49 +94,4 @@ class AllKNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductionMixi
         self.reduction_ = 1.0 - float(l_.shape[0]) / y.shape[0]
 
         return self.prototypes_, self.labels_
- 
-    def fit(self, X, y):
-        """
-        Fit the NearestPrototype model according to the given training data.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape = [n_samples, n_features]
-            Training vector, where n_samples in the number of samples and
-            n_features is the number of features.
-            Note that centroid shrinking cannot be used with sparse matrices.
-        y : array, shape = [n_samples]
-            Target values (integers)
-        """
-
-        self.reduce(X, y)
-        return self
-
-    def predict(self, X, n_neighbors = 1):
-        """Perform classification on an array of test vectors X.
-
-        The predicted class C for each sample in X is returned.
-
-        Parameters
-        ----------
-        X : array-like, shape = [n_samples, n_features]
-
-        Returns
-        -------
-        C : array, shape = [n_samples]
-
-        Notes
-        -----
-        If the metric constructor parameter is "precomputed", X is assumed to
-        be the distance matrix between the data to be predicted and
-        ``self.centroids_``.
-        """
-        X = atleast2d_or_csr(X)
-        if not hasattr(self, "prototypes_") or self.prototypes_ == None:
-            raise AttributeError("Model has not been trained yet.")
-        #return self.labels_[pairwise_distances(
-        #    X, self.prototypes_, metric=self.metric).argmin(axis=1)]
-        knn = KNeighborsClassifier(n_neighbors = n_neighbors)
-        knn.fit(self.prototypes_, self.labels_)
-        return knn.predict(X)
-
+   
