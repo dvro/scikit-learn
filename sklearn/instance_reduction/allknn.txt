@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Condensed-Nearest Neighbors
+All K-Nearest Neighbors
 """
 
 # Author: Dayvid Victor <victor.dvro@gmail.com>
@@ -10,26 +10,28 @@ Condensed-Nearest Neighbors
 import numpy as np
 from scipy import sparse as sp
 
-from ..base import BaseEstimator, ClassifierMixin
+from ..base import BaseEstimator, ClassifierMixin, InstanceReductionMixin
 from ..externals.six.moves import xrange
 from ..metrics.pairwise import pairwise_distances
 from ..utils.validation import check_arrays, atleast2d_or_csr
 from ..neighbors.classification import KNeighborsClassifier
-from .base import InstanceReductionMixin
+from .enn import EditedNearestNeighbors
 
 
-class CondensedNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductionMixin):
-    """Condensed Nearest Neighbors.
+class AllKNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductionMixin):
+    """All K-Nearest Neighbors.
 
     Each class is represented by a set of prototypes, with test samples
     classified to the class with the nearest prototype.
-    The Condensed Nearest Neighbors removes the redundant instances,
-    maintaining the samples in the decision boundaries.
+    The All KNN removes the instances in the boundaries, maintaining 
+    redudant samples. Creating a much more smooth decision region.
+    It is similar to the Repeated-Edited Nearest Neighbors, but it has
+    a different approach.
 
     Parameters
     ----------
-    n_neighbors : int, optional (default = 1)
-        Number of neighbors to use by default for :meth:`k_neighbors` queries.
+    n_neighbors : int, optional (default = 5)
+        Number of limit neighbors to use by default for :meth:`k_neighbors` queries.
 
     Attributes
     ----------
@@ -43,68 +45,53 @@ class CondensedNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductio
 
     Examples
     --------
-    >>> from sklearn.instance_reduction.cnn import CondensedNearestNeighbors
+    >>> from sklearn.instance_reduction.allknn import AllKNearestNeighbors
     >>> import numpy as np
-    >>> X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
-    >>> y = np.array([1, 1, 1, 2, 2, 2])
-    >>> cnn = CondensedNearestNeighbors()
-    >>> cnn.fit(X, y)
-    CondensedNearestNeighbors(n_neighbors=1)
-    >>> print(cnn.predict([[-0.8, -1]]))
+    >>> X = np.array([[-1, 0], [-0.8, 1], [-0.8, -1], [-0.5, 0] , [0.5, 0], [1, 0], [0.8, 1], [0.8, -1]])
+    >>> y = np.array([1, 1, 1, 2, 1, 2, 2, 2])
+    >>> all_kneigh = AllKNearestNeighbors()
+    >>> all_kneigh.fit(X, y)
+    AllKNearestNeighbors(n_neighbors=5)
+    >>> print(all_kneigh.predict([[-0.6, 0.6]]))
     [1]
+    >>> print all_kneigh.reduction_
+    0.625
 
     See also
     --------
     sklearn.neighbors.KNeighborsClassifier: nearest neighbors classifier
 
-    Notes
-    -----
-    The Condensed Nearest Neighbor is one the first prototype selection
-    technique in literature.
-
     References
     ----------
-    P. E. Hart, The condensed nearest neighbor rule, IEEE Transactions on 
-    Information Theory 14 (1968) 515–516.
+    I. Tomek. An experiment with the edited nearest-neighbor rule. 
+    IEEE Transactions on Systems, Man, and Cybernetics, 6(6):448–452, 1976.
 
     """
 
-    def __init__(self, n_neighbors=1):
+    def __init__(self, n_neighbors=5):
         self.n_neighbors = n_neighbors
 
     def reduce(self, X, y):
-        
-#        knn = KNeighborsClassifier(n_neighbors = self.n_neighbors)
-#        knn.fit(X, y)
-
         X, y = check_arrays(X, y, sparse_format="csr")
-#        if sp.issparse(X):
-#            raise ValueError("threshold shrinking not supported"
-#                             " for sparse input")
-        prots_s = []
-        labels_s = []
 
         classes = np.unique(y)
         self.classes_ = classes
 
-        for cur_class in classes:
-            mask = y == cur_class
-            insts = X[mask]
-            prots_s = prots_s + [insts[np.random.randint(0, insts.shape[0])]]
-            labels_s = labels_s + [cur_class]
+        edited_nn = EditedNearestNeighbors(n_neighbors = 1)
+        p_, l_, r_ = X, y, 1.0
 
+        for k in range(1, self.n_neighbors + 1):
+            if l_.shape[0] > k + 1:
+                edited_nn.n_neighbors = k
+                edited_nn.fit(p_, l_)
+                p_ = edited_nn.prototypes_
+                l_ = edited_nn.labels_
+                r_ = edited_nn.reduction_
+             
+        self.prototypes_ = p_
+        self.labels_ = l_
+        self.reduction_ = 1.0 - float(l_.shape[0]) / y.shape[0]
 
-        knn = KNeighborsClassifier(n_neighbors = self.n_neighbors)
-        knn.fit(prots_s, labels_s)
-        for sample, label in zip(X, y):
-            if knn.predict(sample) != [label]:
-                prots_s = prots_s + [sample]
-                labels_s = labels_s + [label]
-                knn.fit(prots_s, labels_s)
-       
-        self.prototypes_ = np.asarray(prots_s)
-        self.labels_ = np.asarray(labels_s)
-        self.reduction_ = 1.0 - float(len(self.labels_))/len(y)
         return self.prototypes_, self.labels_
  
     def fit(self, X, y):
@@ -132,8 +119,6 @@ class CondensedNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductio
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
-        n_neighbors : int, optional (default = 1)
-        Number of neighbors to use by default for :meth:`k_neighbors` queries.
 
         Returns
         -------
@@ -153,3 +138,4 @@ class CondensedNearestNeighbors(BaseEstimator, ClassifierMixin, InstanceReductio
         knn = KNeighborsClassifier(n_neighbors = n_neighbors)
         knn.fit(self.prototypes_, self.labels_)
         return knn.predict(X)
+
