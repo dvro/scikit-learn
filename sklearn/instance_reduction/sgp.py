@@ -31,9 +31,6 @@ class SelfGeneratingPrototypes(BaseEstimator, ClassifierMixin, InstanceReduction
 
     Parameters
     ----------
-    n_neighbors : int, optional (default = 1)
-        Number of neighbors to use by default for :meth:`k_neighbors` queries.
-
     r_min: float, optional (default = 0.0)
         Determine the minimum size of a cluster [0.00, 0.20]
 
@@ -56,10 +53,11 @@ class SelfGeneratingPrototypes(BaseEstimator, ClassifierMixin, InstanceReduction
     >>> from sklearn.instance_reduction.sgp import SelfGeneratingPrototypes
     >>> import numpy as np
     >>> X = np.array([[i] for i in range(1,13)])
+    >>> X = X + np.asarray([0.1,0,-0.1,0.1,0,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1])
     >>> y = np.array([1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 1, 1])
     >>> sgp = SelfGeneratingPrototypes()
     >>> sgp.fit(X, y)
-    SelfGeneratingPrototypes(n_neighbors=3)
+    SelfGeneratingPrototypes(r_min=0.0, r_mis=0.0)
     >>> print sgp.reduction_
     0.25
 
@@ -177,9 +175,6 @@ class SelfGeneratingPrototypes2(SelfGeneratingPrototypes):
 
     Parameters
     ----------
-    n_neighbors : int, optional (default = 1)
-        Number of neighbors to use by default for :meth:`k_neighbors` queries.
-
     r_min: float, optional (default = 0.0)
         Determine the minimum size of a cluster [0.00, 0.20]
 
@@ -202,12 +197,13 @@ class SelfGeneratingPrototypes2(SelfGeneratingPrototypes):
     >>> from sklearn.instance_reduction.sgp import SelfGeneratingPrototypes2
     >>> import numpy as np
     >>> X = np.array([[i] for i in range(1,13)])
+    >>> X = X + np.asarray([0.1,0,-0.1,0.1,0,-0.1,0.1,-0.1,0.1,-0.1,0.1,-0.1])
     >>> y = np.array([1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 1, 1])
-    >>> sgp = SelfGeneratingPrototypes()
-    >>> sgp.fit(X, y)
-    SelfGeneratingPrototypes2(n_neighbors=3)
-    >>> print sgp.reduction_
-    0.25
+    >>> sgp2 = SelfGeneratingPrototypes2()
+    >>> sgp2.fit(X, y)
+    SelfGeneratingPrototypes2(r_min=0.0, r_mis=0.0)
+    >>> print sgp2.reduction_
+    0.5
 
     See also
     --------
@@ -220,6 +216,10 @@ class SelfGeneratingPrototypes2(SelfGeneratingPrototypes):
     for pattern classification. Pattern Recognition, 40(5):1498–1509, 2007.
     """
     def merge(self):
+
+        if len(self.groups) < 2:
+            return self.groups
+
         knn = KNeighborsClassifier(n_neighbors = 2)
 
         merged = False
@@ -248,6 +248,10 @@ class SelfGeneratingPrototypes2(SelfGeneratingPrototypes):
 
 
     def pruning(self):
+
+        if len(self.groups) < 2:
+            return self.groups
+
         knn = KNeighborsClassifier(n_neighbors=1)
         pruned, fst = False, True
         
@@ -294,8 +298,4 @@ class SelfGeneratingPrototypes2(SelfGeneratingPrototypes):
         self.reduction_ = 1.0 - float(len(self.labels_))/len(y)
         return self.prototypes_, self.labels_
  
-
-
-
-
 
