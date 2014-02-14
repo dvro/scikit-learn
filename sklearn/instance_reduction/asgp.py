@@ -55,16 +55,16 @@ class AdaptiveSelfGeneratingPrototypes(SelfGeneratingPrototypes2):
     >>> from sklearn.instance_reduction.asgp import AdaptiveSelfGeneratingPrototypes
     >>> from sklearn.instance_reduction.sgp import SelfGeneratingPrototypes2
     >>> import numpy as np
-    >>> X = np.array([[i] for i in range(100)])
-    >>> y = np.asarray(10*[0] + 80 * [1] + 10 * [0])
-    >>> asgp = AdaptiveSelfGeneratingPrototypes(r_min=0.20, r_mis=0.20)
+    >>> X = np.array([[i] for i in range(1000)])
+    >>> y = np.asarray(990 * [1] + 10 * [0])
+    >>> asgp = AdaptiveSelfGeneratingPrototypes(r_min=0.2, r_mis=0.2)
     >>> asgp.fit(X, y)
-    SelfGeneratingPrototypes(r_min=0.20, r_mis=0.20)
+    AdaptiveSelfGeneratingPrototypes(r_min=0.2, r_mis=0.2)
     >>> print list(set(asgp.labels_))
     [0, 1]
-    >>> sgp2 = SelfGeneratingPrototypes2(r_min=0.20, r_mis=0.20)
+    >>> sgp2 = SelfGeneratingPrototypes2(r_min=0.2, r_mis=0.2)
     >>> sgp2.fit(X, y)
-    SelfGeneratingPrototypes2(r_min=0.20, r_mis=0.20)
+    SelfGeneratingPrototypes2(r_min=0.2, r_mis=0.2)
     >>> print list(set(sgp2.labels_))
     [1]
 

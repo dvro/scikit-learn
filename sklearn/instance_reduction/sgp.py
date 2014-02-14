@@ -274,6 +274,10 @@ class SelfGeneratingPrototypes2(SelfGeneratingPrototypes):
                 else:
                     index = index + 1
 
+                if len(self.groups) == 1:
+                    index = len(self.groups)
+                    pruned = False
+
         return self.groups
             
 
